@@ -10,14 +10,15 @@
 //   plain   true = the diary entry stands as written, without "מ.א ל"
 //   joins   another row's id: when both fall on the same day, the two share one diary entry
 // A row whose "from" is another row is counted from that row's date, so the rows form a chain.
+// An anchor's "entry" is its own diary entry, written as is.
 (function (root) {
   const Moadim = typeof module !== "undefined" && module.exports ? require("./engine.js") : root.Moadim;
 
   const ANCHORS = [
-    { id: "claim", label: "המצאת כתב התביעה" },
-    { id: "defense", label: "המצאת כתב ההגנה" },
-    { id: "last", label: "כתב הטענות האחרון" },
-    { id: "pretrial", label: "קדם המשפט הראשון" },
+    { id: "claim", label: "המצאת כתב התביעה", entry: "מועד המצאת כתב התביעה" },
+    { id: "defense", label: "המצאת כתב ההגנה", entry: "מועד המצאת כתב ההגנה" },
+    { id: "last", label: "כתב הטענות האחרון", entry: "מועד הגשת כתב הטענות האחרון" },
+    { id: "pretrial", label: "קדם המשפט הראשון", entry: "ישיבת קדם-משפט ראשונה" },
   ];
 
   const RULES = [
@@ -48,14 +49,17 @@
     { id: "witnessesD", from: "witnessesP", days: 14, action: "רשימת עדים – נתבע", reg: "62", entry: "הגשת רשימת עדים על ידי הנתבע", joins: "motionListAns" },
   ];
 
-  // The dates that follow from one anchor date.
+  // The dates that follow from the given dates: { claim: date } or several, e.g. { last: date, pretrial: date }.
   // Returns the rows that have a date, in table order, each with its date (the last day) and the
   // engine's count details. A row counted from another row is counted from that row's last day.
-  function schedule(anchor, anchorDate) {
-    const dates = { [anchor]: anchorDate };
+  // A given date stands in place of its row, and a row that leads up to a given date is left out:
+  // once the last pleading has a date, the deadline for the defense is behind us.
+  function schedule(given) {
+    const leadsToGiven = (id) => RULES.some((r) => r.from === id && (r.id in given || leadsToGiven(r.id)));
+    const dates = { ...given };
     const rows = [];
     for (const rule of RULES) {
-      if (rule.id === anchor || !(rule.from in dates)) continue;
+      if (rule.id in given || leadsToGiven(rule.id) || !(rule.from in dates)) continue;
       const counted = Moadim.count(dates[rule.from], rule.days);
       dates[rule.id] = counted.date;
       rows.push({ ...rule, ...counted });
@@ -63,15 +67,16 @@
     return rows;
   }
 
-  // The same rows as diary entries, earliest first: [{ date, text }].
-  // "מ.א ל<step> (תקנה N)"; two rows that join share one entry.
-  function diary(rows) {
+  // The given dates (marked "own") and the rows as diary entries, earliest first: [{ date, text }].
+  // A row reads "מ.א ל<step> (תקנה N)"; two rows that join share one entry.
+  function diary(given, rows) {
     const one = (r) => `${r.entry} (תקנה ${r.reg})`;
     const joined = (r) => rows.find((host) => host.id === r.joins && host.date === r.date);
-    return rows.filter((r) => !joined(r)).map((r) => {
+    const own = ANCHORS.filter((a) => a.id in given).map((a) => ({ date: given[a.id], text: a.entry, own: true }));
+    return own.concat(rows.filter((r) => !joined(r)).map((r) => {
       const parts = [r, ...rows.filter((other) => joined(other) === r)].map(one);
       return { date: r.date, text: (r.plain ? "" : "מ.א ל") + parts.join(" ול") };
-    }).sort((a, b) => a.date - b.date);
+    })).sort((a, b) => a.date - b.date);
   }
 
   const api = { ANCHORS, RULES, schedule, diary };

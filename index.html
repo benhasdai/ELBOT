@@ -26,21 +26,27 @@
   main { max-width: 600px; margin: 0 auto; padding: 48px 24px 64px; }
   h1 { font: 700 64px/.74 var(--display); padding: .24em 0 .16em; border-bottom: 3px solid var(--ink); text-align: center; }
 
+  /* two screens: one date with its list, or several dates at once for one diary */
+  .tabs { display: flex; gap: 16px; margin-top: 12px; font-size: 13px; }
+  .tabs button { background: none; border: 0; padding: 10px 0; margin: -10px 0; color: var(--muted); cursor: pointer; }
+  .tabs button[aria-pressed=true] { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
   /* the date, what it is, then forward or backward; the list appears only when one of the two is pressed */
-  .ask { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 24px; }
+  .ask { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 20px; }
+  .ask[hidden] { display: none; }
   .field { grid-column: span 2; min-width: 0; }
   .lab { display: block; margin-bottom: 8px; font-size: 13px; color: var(--muted); }
   /* the date is typed as dd.mm.yyyy; the button opens the browser's calendar, whose own field stays out of sight */
   .datebox { position: relative; display: flex; height: 44px; border: 1px solid var(--ink); transition: background-color 150ms var(--ease-out); }
-  .datebox:has(#date:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
-  #date { flex: 1; min-width: 0; padding: 0 10px; background: transparent; border: 0; border-radius: 0; outline: none;
+  .datebox:has([type=text]:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .datebox [type=text] { flex: 1; min-width: 0; padding: 0 10px; background: transparent; border: 0; border-radius: 0; outline: none;
     font: 600 18px/1 var(--nums); font-variant-numeric: tabular-nums; direction: ltr; text-align: right; }
-  #date::placeholder { color: var(--muted); opacity: 1; }
-  #cal { display: grid; place-items: center; width: 42px; padding: 0; background: none; border: 0; cursor: pointer;
+  .datebox [type=text]::placeholder { color: var(--muted); opacity: 1; }
+  .datebox button { display: grid; place-items: center; width: 42px; padding: 0; background: none; border: 0; cursor: pointer;
     transition: transform 120ms var(--ease-out); }
-  #cal:active { transform: scale(0.94); }
-  #cal svg { width: 18px; height: 18px; }
-  #pick { position: absolute; inset-inline-end: 0; bottom: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+  .datebox button:active { transform: scale(0.94); }
+  .datebox svg { width: 18px; height: 18px; }
+  .datebox [type=date] { position: absolute; inset-inline-end: 0; bottom: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
   /* what the date is: the browser's own list, with our frame and arrow */
   #kind { display: block; width: 100%; height: 44px; padding: 0 10px; padding-inline-end: 36px; border: 1px solid var(--ink); border-radius: 0;
     appearance: none; -webkit-appearance: none; font-size: 15px; cursor: pointer; text-overflow: ellipsis;
@@ -60,6 +66,7 @@
   .go:active { transform: scale(0.97); }
   .go:disabled { background: transparent; border-color: var(--rule); color: var(--off); font-weight: 400; cursor: default; transform: none; }
   .ask.free .go { grid-column: span 1; }
+  #all { grid-column: 1 / -1; }
 
   section { margin-top: 32px; }
   .hd { display: flex; align-items: baseline; gap: 12px; }
@@ -84,6 +91,10 @@
   .sub { display: grid; grid-template-columns: 100px 1fr; column-gap: 20px; align-items: baseline; }
   .sub .d { font-size: 18px; color: var(--ink); }
   .sub .t { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 15px; }
+
+  /* several dates: one plain list, as the diary will have it; the dates that were typed in are in bold */
+  .flat .d { font-size: 18px; color: var(--ink); }
+  .flat.own p { font-weight: 700; }
 
   .bar { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 32px; padding-top: 12px;
     border-top: 3px solid var(--ink); font-size: 13px; color: var(--muted); }
@@ -110,7 +121,7 @@
     .go:enabled:hover { background: #33332F; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .go:active, .acts button:active, #cal:active { transform: none; }
+    .go:active, .acts button:active, .datebox button:active { transform: none; }
     #result.out, #result.swap :is(.hd, .row, .bar) { transition: none; }
   }
   .error { margin-top: 32px; padding-top: 12px; border-top: 3px solid var(--ink); font-weight: 700; }
@@ -131,14 +142,15 @@
 <main>
   <h1>ELLEBOT</h1>
 
+  <nav class="tabs" id="tabs" aria-label="מסך">
+    <button type="button" value="ask" aria-pressed="true">תאריך אחד</button>
+    <button type="button" value="many" aria-pressed="false">כמה תאריכים</button>
+  </nav>
+
   <form class="ask" id="ask" onsubmit="return false">
     <div class="field">
       <label class="lab" for="date">תאריך</label>
-      <div class="datebox">
-        <input type="text" id="date" inputmode="numeric" autocomplete="off" placeholder="dd.mm.yyyy" maxlength="10">
-        <button type="button" id="cal" aria-label="בחירת תאריך מלוח שנה"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.25" y="3.75" width="13.5" height="12" rx="1"/><path d="M2.25 7.5h13.5M5.75 2v3.5M12.25 2v3.5"/></svg></button>
-        <input type="date" id="pick" tabindex="-1" aria-hidden="true" min="2021-01-01">
-      </div>
+      <div class="datebox" data-id="date"></div>
     </div>
     <div class="field">
       <label class="lab" for="kind">מה התאריך</label>
@@ -148,6 +160,8 @@
     <button type="button" class="go" value="fwd" disabled>קדימה</button>
     <button type="button" class="go" value="back" disabled>אחורה</button>
   </form>
+
+  <form class="ask" id="many" onsubmit="return false" hidden></form>
 
   <div id="result" aria-live="polite"></div>
 </main>
@@ -174,18 +188,19 @@
   const days = (r) => `${Math.abs(r.days)} יום${r.days < 0 ? " לפני" : ""}`;
 
   let start = null; // the date in the field; null until it is a real date
-  let shown = null; // what is on the page now, for copying and the CSV file: { header (not for a free count), start, entries }
+  const given = {}; // on the second screen: the dates typed in, by kind
+  let shown = null; // what is on the page now, for copying and the CSV file: { file, entries }
   let pending = 0;  // timer between the old list dropping out and the new one coming in
   const kind = el("kind"); // its value: one of the kinds of date, or "free" for a free number of days
   kind.innerHTML = `<option value="" selected disabled hidden>בחירה</option>`
     + ANCHORS.map((a) => `<option value="${a.id}">${a.label}</option>`).join("")
     + `<option value="free">מספר ימים חופשי</option>`;
-  const buttons = [...document.querySelectorAll(".go")];
+  const buttons = [...document.querySelectorAll("#ask .go")];
   // a kind of date is counted in the direction its rows in the table go; a free number of days, either way
   const goes = (dir) => kind.value === "free" ? Number(el("n").value) > 0
     : RULES.some((r) => r.from === kind.value && (dir === "back") === (r.days < 0));
 
-  // any change above the buttons clears the list; it comes back when forward or backward is pressed
+  // any change above the buttons clears the list; it comes back when a button is pressed
   function reset() {
     clearTimeout(pending);
     el("result").classList.remove("out");
@@ -195,25 +210,52 @@
     el("n").hidden = kind.value !== "free";
     el("ask").classList.toggle("free", kind.value === "free");
     for (const b of buttons) b.disabled = start === null || !goes(b.value);
+    el("all").disabled = !Object.keys(given).length;
   }
-  kind.addEventListener("change", () => { reset(); if (kind.value === "free") el("n").focus(); });
-  el("n").addEventListener("input", () => { el("n").value = el("n").value.replace(/\D/g, ""); reset(); });
-  for (const b of buttons) b.addEventListener("click", (e) => {
+  // a press: the old list drops out and the new one is drawn; by keyboard (no click count) at once
+  function press(e, make, back) {
     const result = el("result");
-    const animate = e.detail > 0; // a press by keyboard has no click count
+    const animate = e.detail > 0;
+    const draw = () => {
+      result.classList.remove("out");
+      try {
+        finish(make(), back);
+      } catch (err) {
+        result.innerHTML = `<p class="error">${esc(err.message)}</p>`;
+        shown = null;
+      }
+    };
     clearTimeout(pending);
     result.classList.toggle("swap", animate);
     if (animate && result.firstElementChild) {
       result.classList.add("out");
-      pending = setTimeout(() => { result.classList.remove("out"); render(b.value); }, 110);
-    } else {
-      result.classList.remove("out");
-      render(b.value);
+      pending = setTimeout(draw, 110);
+    } else draw();
+  }
+
+  // the second screen: a date field for each kind of date, and one button
+  el("many").innerHTML = ANCHORS.map((a) => `
+    <div class="field">
+      <label class="lab" for="d-${a.id}">${a.label}</label>
+      <div class="datebox" data-id="d-${a.id}" data-kind="${a.id}"></div>
+    </div>`).join("") + `<button type="button" class="go" id="all" disabled>חישוב</button>`;
+  el("all").addEventListener("click", (e) => press(e, all, false));
+  el("tabs").addEventListener("click", (e) => {
+    if (!e.target.value) return;
+    for (const tab of el("tabs").children) {
+      tab.setAttribute("aria-pressed", tab === e.target);
+      el(tab.value).hidden = tab !== e.target;
     }
+    reset();
   });
+
+  kind.addEventListener("change", () => { reset(); if (kind.value === "free") el("n").focus(); });
+  el("n").addEventListener("input", () => { el("n").value = el("n").value.replace(/\D/g, ""); reset(); });
+  for (const b of buttons) b.addEventListener("click", (e) =>
+    press(e, () => (kind.value === "free" ? free(b.value) : chain()), b.value === "back"));
   // Enter in a field presses the button that can be pressed (forward, when both can)
-  el("ask").addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && e.target.matches("#date, #n")) buttons.find((b) => !b.disabled)?.click();
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && e.target.matches(".ask input[type=text]")) e.target.form.querySelector(".go:enabled")?.click();
   });
   // dd.mm.yyyy, also with / or - between the parts, or eight digits in a row; null if it is not a real date
   function parseDate(text) {
@@ -226,32 +268,41 @@
   }
   const padded = (o) => Moadim.toIso(o).split("-").reverse().join(".");
 
-  function setDate(o) {
-    if (o === start) return;
-    start = o;
-    reset();
+  // A date field: typed as dd.mm.yyyy, or picked from the browser's calendar. "change" gets the date, or null.
+  function dateField(box, change) {
+    box.innerHTML = `<input type="text" id="${box.dataset.id}" inputmode="numeric" autocomplete="off" placeholder="dd.mm.yyyy" maxlength="10">
+      <button type="button" aria-label="בחירת תאריך מלוח שנה"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.25" y="3.75" width="13.5" height="12" rx="1"/><path d="M2.25 7.5h13.5M5.75 2v3.5M12.25 2v3.5"/></svg></button>
+      <input type="date" tabindex="-1" aria-hidden="true" min="2021-01-01">`;
+    const [text, cal, pick] = box.children;
+    let value = null;
+    const set = (o) => { if (o !== value) change(value = o); };
+    text.addEventListener("input", () => set(parseDate(text.value)));
+    text.addEventListener("blur", () => { if (value !== null) text.value = padded(value); });
+    cal.addEventListener("click", () => {
+      pick.value = value === null ? "" : Moadim.toIso(value);
+      pick.showPicker();
+    });
+    pick.addEventListener("change", () => {
+      if (!pick.value) return;
+      text.value = padded(Moadim.fromIso(pick.value));
+      set(Moadim.fromIso(pick.value));
+    });
   }
-  el("date").addEventListener("input", () => setDate(parseDate(el("date").value)));
-  el("date").addEventListener("blur", () => { if (start !== null) el("date").value = padded(start); });
-  el("cal").addEventListener("click", () => {
-    el("pick").value = start === null ? "" : Moadim.toIso(start);
-    el("pick").showPicker();
-  });
-  el("pick").addEventListener("change", () => {
-    if (!el("pick").value) return;
-    const o = Moadim.fromIso(el("pick").value);
-    el("date").value = padded(o);
-    setDate(o);
+  for (const box of document.querySelectorAll(".datebox")) dateField(box, (o) => {
+    if (!box.dataset.kind) start = o;
+    else if (o === null) delete given[box.dataset.kind];
+    else given[box.dataset.kind] = o;
+    reset();
   });
   el("result").addEventListener("click", (e) => {
     if (e.target.id === "copy") {
-      const text = (shown.header ? [shown.header] : []).concat(shown.entries.map((x) => `${dmy(x.date)} (${dayName(x.date)}) – ${x.text}`)).join("\n");
+      const text = shown.entries.map((x) => `${dmy(x.date)} (${dayName(x.date)}) – ${x.text}`).join("\n");
       navigator.clipboard.writeText(text).then(() => {
         e.target.textContent = "הועתק";
         setTimeout(() => { e.target.textContent = "העתקה"; }, 1400);
       });
     } else if (e.target.id === "csv") {
-      download(`מועדים ${dmy(shown.start)}.csv`, csv(shown.entries));
+      download(`${shown.file}.csv`, csv(shown.entries));
     }
   });
 
@@ -263,10 +314,11 @@
   }
   const note = (r) => (noteText(r) ? `<p class="note">${noteText(r)}</p>` : "");
 
-  // The diary entries as a CSV file that Excel opens in Hebrew (UTF-8 with a byte order mark).
+  // The diary entries as a CSV file that opens in Hebrew (UTF-8 with a byte order mark). The entry is the first
+  // column and the date the second, so that in a sheet that runs left to right the date is on the right.
   function csv(entries) {
     const date = (o) => Moadim.toIso(o).split("-").reverse().join("/");
-    const lines = [["תאריך", "יום", "רישום"]].concat(entries.map((x) => [date(x.date), dayName(x.date), x.text]));
+    const lines = [["פירוט", "תאריך"]].concat(entries.map((x) => [x.text, date(x.date)]));
     return "\uFEFF" + lines.map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n") + "\r\n";
   }
   function download(name, text) {
@@ -277,15 +329,6 @@
     URL.revokeObjectURL(a.href);
   }
 
-  function render(dir) {
-    try {
-      const html = kind.value === "free" ? free(dir) : chain();
-      finish(html, dir === "back");
-    } catch (err) {
-      el("result").innerHTML = `<p class="error">${esc(err.message)}</p>`;
-      shown = null;
-    }
-  }
   const early = (o) => { if (o < Moadim.MIN) throw new Error("המחשבון תומך בתאריכים מ-1.1.2021 ואילך."); };
 
   // A free count: the last day, so many days forward or backward from the date.
@@ -294,7 +337,7 @@
     const r = Moadim.count(start, dir === "back" ? -n : n);
     early(r.date);
     r.days = dir === "back" ? -n : n;
-    shown = { start, entries: [{ date: r.date, text: `היום האחרון, ${n} יום ${DIRECTION[dir]} מ-${dmy(start)}` }] };
+    shown = { file: `מועדים ${dmy(start)}`, entries: [{ date: r.date, text: `היום האחרון, ${n} יום ${DIRECTION[dir]} מ-${dmy(start)}` }] };
     return `
       <section>
         <div class="hd"><h2>${DIRECTION[dir]}</h2><p>${n} יום מ${dayName(start)} <span class="n">${dmy(start)}</span></p></div>
@@ -308,7 +351,7 @@
   // The deadlines that follow from the date, by the table.
   function chain() {
     const anchor = kind.value;
-    const rows = schedule(anchor, start);
+    const rows = schedule({ [anchor]: start });
     rows.forEach((r) => early(r.date));
     const dateOf = { [anchor]: start };
     for (const r of rows) dateOf[r.id] = r.date;
@@ -337,8 +380,25 @@
       </section>`;
     }).join("");
 
-    shown = { header: `מועדים לפי ${ANCHORS.find((a) => a.id === anchor).label}, ${dmy(start)}:`, start, entries: diary(rows) };
+    shown = { file: `מועדים ${dmy(start)}`, entries: diary({ [anchor]: start }, rows) };
     return html;
+  }
+
+  // Several dates at once: everything that follows from them, as one list of diary entries.
+  function all() {
+    const rows = schedule(given);
+    rows.forEach((r) => early(r.date));
+    const entries = diary(given, rows);
+    shown = { file: "יומן מועדים", entries };
+    return `
+      <section>
+        <div class="hd"><h2>יומן</h2><p>${entries.length} רישומים, מהמוקדם למאוחר</p></div>
+        ${entries.map((x) => `
+        <div class="row flat${x.own ? " own" : ""}">
+          <div class="d">${dmy(x.date)}</div>
+          <p>${esc(x.text)}</p>
+        </div>`).join("")}
+      </section>`;
   }
 
   // the list, the footer under it, and the order its lines come in: the heading first, then the rows
