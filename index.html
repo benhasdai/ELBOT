@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karantina:wght@700&family=Barlow+Condensed:wght@600&family=IBM+Plex+Sans+Hebrew:wght@400;700&display=swap">
 <style>
-  /* Ink rules, a condensed display title, condensed numerals, one accent colour for the dates. */
+  /* Ink rules, a condensed display title, condensed numerals. The one accent colour is kept for the main dates. */
   :root {
-    --paper: #F4F4F1; --ink: #121212; --muted: #66665F; --rule: #D3D3CC; --accent: #1F3BD6;
+    --paper: #F4F4F1; --ink: #121212; --muted: #66665F; --rule: #D3D3CC; --accent: #2A3BB0; --off: #9A9A92;
     --display: "Karantina", "IBM Plex Sans Hebrew", "Arial Hebrew", sans-serif;
     --nums: "Barlow Condensed", "Arial Narrow", sans-serif;
     --text: "IBM Plex Sans Hebrew", "Arial Hebrew", Arial, sans-serif;
@@ -47,7 +47,8 @@
     background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23121212' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E") no-repeat left 13px center / 12px 8px;
     transition: background-color 150ms var(--ease-out); }
   #kind:has(option[value=""]:checked) { color: var(--muted); }
-  #kind:disabled { border-color: var(--rule); color: var(--muted); cursor: default; opacity: 1; }
+  #kind:disabled { border-color: var(--rule); color: var(--off); cursor: default; opacity: 1;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%239A9A92' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E"); }
   /* a free count: the number of days sits before the two buttons */
   #n { grid-column: span 2; min-width: 0; height: 44px; padding: 0 10px; background: transparent; border: 1px solid var(--ink); border-radius: 0;
     font: 600 18px/1 var(--nums); font-variant-numeric: tabular-nums; text-align: center; }
@@ -57,7 +58,7 @@
     color: var(--paper); font-size: 15px; font-weight: 700; cursor: pointer; user-select: none;
     transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out), transform 120ms var(--ease-out); }
   .go:active { transform: scale(0.97); }
-  .go:disabled { background: transparent; border-color: var(--rule); color: var(--muted); font-weight: 400; cursor: default; transform: none; }
+  .go:disabled { background: transparent; border-color: var(--rule); color: var(--off); font-weight: 400; cursor: default; transform: none; }
   .ask.free .go { grid-column: span 1; }
 
   section { margin-top: 32px; }
@@ -65,7 +66,7 @@
   h2 { font: 700 28px/.9 var(--display); }
   .hd p { color: var(--muted); font-size: 13px; }
   .hd .n { font: 600 15px/1 var(--nums); font-variant-numeric: tabular-nums; }
-  h2, .d { color: var(--accent); }
+  .d { color: var(--accent); }
 
   .row { display: grid; grid-template-columns: 120px 1fr; column-gap: 20px; align-items: baseline; padding: 12px 0;
     border-top: 1px solid var(--rule); }

@@ -64,13 +64,13 @@
   }
 
   // The same rows as diary entries, earliest first: [{ date, text }].
-  // "מ.א ל<step> (תקנה N)*"; two rows that join share one entry.
+  // "מ.א ל<step> (תקנה N)"; two rows that join share one entry.
   function diary(rows) {
     const one = (r) => `${r.entry} (תקנה ${r.reg})`;
     const joined = (r) => rows.find((host) => host.id === r.joins && host.date === r.date);
     return rows.filter((r) => !joined(r)).map((r) => {
       const parts = [r, ...rows.filter((other) => joined(other) === r)].map(one);
-      return { date: r.date, text: (r.plain ? "" : "מ.א ל") + parts.join(" ול") + "*" };
+      return { date: r.date, text: (r.plain ? "" : "מ.א ל") + parts.join(" ול") };
     }).sort((a, b) => a.date - b.date);
   }
 
