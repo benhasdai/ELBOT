@@ -89,10 +89,16 @@
   .acts button:active { transform: scale(0.97); }
   #copy { min-width: 3.5em; text-align: start; } /* "הועתק" is narrower than "העתקה"; keep the next button in place */
 
-  /* switching the kind of date by pointer: the new list settles in; a keyboard switch or a date change is instant */
-  #result.swap section, #result.swap .bar { transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out); }
-  #result.swap section + section { transition-delay: 40ms; }
-  @starting-style { #result.swap section, #result.swap .bar { opacity: 0; transform: translateY(6px); } }
+  /* pressing one of the three: the old list drops out, then the new one is laid down line by line, so it is plain
+     that the dates were worked out again. Counting forward the lines come down from above, top first; counting
+     backward they come up from below, bottom first. A switch by keyboard is instant. */
+  #result.out { opacity: 0; transition: opacity 110ms var(--ease-out); }
+  #result.swap :is(.hd, .row, .bar) { transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out);
+    transition-delay: calc(var(--i) * 30ms); }
+  @starting-style {
+    #result.swap :is(.hd, .row, .bar) { opacity: 0; transform: translateY(-8px); }
+    #result.swap.back :is(.hd, .row, .bar) { transform: translateY(8px); }
+  }
 
   @media (hover: hover) and (pointer: fine) {
     fieldset:enabled .seg label:hover span { background: var(--rule); }
@@ -101,7 +107,7 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .seg label:active span, .acts button:active, #cal:active { transform: none; }
-    #result.swap section, #result.swap .bar { transition: none; }
+    #result.out, #result.swap :is(.hd, .row, .bar) { transition: none; }
   }
   .error { margin-top: 32px; padding-top: 12px; border-top: 3px solid var(--ink); font-weight: 700; }
 
@@ -166,11 +172,21 @@
     `<label><input type="radio" name="anchor" value="${a.id}"><span>${a.label}</span></label>`).join("");
   let byPointer = false;
   el("anchors").addEventListener("pointerdown", () => { byPointer = true; });
+  let pending = 0; // timer between the old list dropping out and the new one coming in
   el("anchors").addEventListener("change", (e) => {
     anchor = e.target.value;
-    el("result").classList.toggle("swap", byPointer);
+    const result = el("result");
+    const animate = byPointer;
     byPointer = false;
-    render();
+    clearTimeout(pending);
+    result.classList.toggle("swap", animate);
+    if (animate && result.firstElementChild) {
+      result.classList.add("out");
+      pending = setTimeout(() => { result.classList.remove("out"); render(); }, 110);
+    } else {
+      result.classList.remove("out");
+      render();
+    }
   });
   // dd.mm.yyyy, also with / or - between the parts, or eight digits in a row; null if it is not a real date
   function parseDate(text) {
@@ -186,6 +202,8 @@
   // a new date clears the list; it comes back when one of the three is pressed again
   function setDate(o) {
     if (o === start) return;
+    clearTimeout(pending);
+    el("result").classList.remove("out");
     start = o;
     el("kind").disabled = start === null;
     for (const radio of document.querySelectorAll("[name=anchor]")) radio.checked = false;
@@ -285,6 +303,15 @@
     el("result").innerHTML = html + `
       <div class="bar"><p>קודם כל, תרגעי. הפגרה אינה נספרת (179(ב)). מועד שקבע בית המשפט גובר. לא מומלץ להשתמש. לא מומלץ להסתמך. עדיף לשאול את פאר.</p>
       <span class="acts"><button type="button" id="copy">העתקה</button><button type="button" id="csv">הורדת CSV</button></span></div>`;
+
+    // the order the lines come in: the heading first, then the rows (from the bottom up when counting backward), the footer last
+    const back = anchor === "pretrial";
+    const lines = [...el("result").querySelectorAll(".hd, .row, .bar")];
+    lines.forEach((line, i) => {
+      const isRow = line.classList.contains("row");
+      line.style.setProperty("--i", back && isRow ? lines.length - 1 - i : i);
+    });
+    el("result").classList.toggle("back", back);
   }
 </script>
 </body>
