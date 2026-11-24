@@ -211,6 +211,11 @@
     el("ask").classList.toggle("free", kind.value === "free");
     for (const b of buttons) b.disabled = start === null || !goes(b.value);
     el("all").disabled = !Object.keys(given).length;
+    // the last pleading is the reply or the last day for it: once it follows from the dates typed in,
+    // its field shows that day, until a date is typed over it
+    let last;
+    try { last = schedule(given).find((r) => r.id === "last"); } catch (err) { /* a date before 2021; "חישוב" says so */ }
+    el("d-last").placeholder = last ? padded(last.date) : "dd.mm.yyyy";
   }
   // a press: the old list drops out and the new one is drawn; by keyboard (no click count) at once
   function press(e, make, back) {
