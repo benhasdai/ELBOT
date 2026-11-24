@@ -1,9 +1,10 @@
 # ELLEBOT
 
 Deadline calculator for Israeli civil procedure (תקנות סדר הדין האזרחי, התשע"ט-2018).
-Enter one date, say what it is (service of the claim, the last pleading, or the first pretrial
-hearing), and get every deadline that follows from it, each with its regulation number.
-The results can be copied as text or downloaded as a CSV file.
+Enter one date, say what it is (service of the claim, service of the defense, the last pleading,
+or the first pretrial hearing), press forward or backward, and get every deadline that follows from
+it, each with its regulation number. A free number of days can be counted from the date as well.
+The results can be copied or downloaded as a CSV file, worded as diary entries.
 
 ## Use
 

@@ -20,16 +20,15 @@
     -webkit-font-smoothing: antialiased; }
   ::selection { background: var(--ink); color: var(--paper); }
   :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-  h1, h2, h3, p, fieldset, legend { margin: 0; padding: 0; }
-  fieldset { border: 0; min-width: 0; }
-  button, input { font: inherit; color: inherit; }
+  h1, h2, h3, p { margin: 0; padding: 0; }
+  button, input, select { font: inherit; color: inherit; }
 
   main { max-width: 600px; margin: 0 auto; padding: 48px 24px 64px; }
   h1 { font: 700 64px/.74 var(--display); padding: .24em 0 .16em; border-bottom: 3px solid var(--ink); text-align: center; }
 
-  /* first the date, then what it is; the list appears only after one of the three is pressed */
-  .ask { display: grid; gap: 16px; margin-top: 24px; }
-  .ask > .field { width: calc((100% + 2px) / 3); } /* as wide as the first of the three cells below */
+  /* the date, what it is, then forward or backward; the list appears only when one of the two is pressed */
+  .ask { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 24px; }
+  .field { grid-column: span 2; min-width: 0; }
   .lab { display: block; margin-bottom: 8px; font-size: 13px; color: var(--muted); }
   /* the date is typed as dd.mm.yyyy; the button opens the browser's calendar, whose own field stays out of sight */
   .datebox { position: relative; display: flex; height: 44px; border: 1px solid var(--ink); transition: background-color 150ms var(--ease-out); }
@@ -42,19 +41,24 @@
   #cal:active { transform: scale(0.94); }
   #cal svg { width: 18px; height: 18px; }
   #pick { position: absolute; inset-inline-end: 0; bottom: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
-  .seg { display: flex; height: 44px; border: 1px solid var(--ink); }
-  .seg label { position: relative; display: flex; flex: 1; cursor: pointer; }
-  .seg label + label { border-inline-start: 1px solid var(--ink); }
-  .seg input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-  .seg span { display: flex; flex: 1; align-items: center; justify-content: center; padding: 0 10px; font-size: 15px; white-space: nowrap; user-select: none;
+  /* what the date is: the browser's own list, with our frame and arrow */
+  #kind { display: block; width: 100%; height: 44px; padding: 0 10px; padding-inline-end: 36px; border: 1px solid var(--ink); border-radius: 0;
+    appearance: none; -webkit-appearance: none; font-size: 15px; cursor: pointer; text-overflow: ellipsis;
+    background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23121212' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E") no-repeat left 13px center / 12px 8px;
+    transition: background-color 150ms var(--ease-out); }
+  #kind:has(option[value=""]:checked) { color: var(--muted); }
+  #kind:disabled { border-color: var(--rule); color: var(--muted); cursor: default; opacity: 1; }
+  /* a free count: the number of days sits before the two buttons */
+  #n { grid-column: span 2; min-width: 0; height: 44px; padding: 0 10px; background: transparent; border: 1px solid var(--ink); border-radius: 0;
+    font: 600 18px/1 var(--nums); font-variant-numeric: tabular-nums; text-align: center; }
+  #n::placeholder { font: 400 15px/1 var(--text); color: var(--muted); opacity: 1; }
+  /* forward and backward do the counting; only the one that fits what the date is can be pressed */
+  .go { grid-column: span 2; height: 44px; padding: 0 10px; background: var(--ink); border: 1px solid var(--ink); border-radius: 0;
+    color: var(--paper); font-size: 15px; font-weight: 700; cursor: pointer; user-select: none;
     transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out), transform 120ms var(--ease-out); }
-  .seg label:active span { transform: scale(0.97); }
-  .seg input:checked + span { background: var(--ink); color: var(--paper); }
-  .seg input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
-  /* until there is a date */
-  fieldset:disabled .seg, fieldset:disabled .seg label { border-color: var(--rule); cursor: default; }
-  fieldset:disabled .seg input { cursor: default; }
-  fieldset:disabled .seg span { color: var(--muted); transform: none; }
+  .go:active { transform: scale(0.97); }
+  .go:disabled { background: transparent; border-color: var(--rule); color: var(--muted); font-weight: 400; cursor: default; transform: none; }
+  .ask.free .go { grid-column: span 1; }
 
   section { margin-top: 32px; }
   .hd { display: flex; align-items: baseline; gap: 12px; }
@@ -67,7 +71,7 @@
     border-top: 1px solid var(--rule); }
   .hd + .row { border-top: 1px solid var(--ink); margin-top: 6px; }
   .d { font: 600 24px/1 var(--nums); font-variant-numeric: tabular-nums; direction: ltr; text-align: right; }
-  .w { margin-top: 4px; font-size: 13px; color: var(--muted); }
+  .w { margin-top: 4px; font-size: 13px; color: var(--muted); white-space: nowrap; }
   h3 { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 15px; font-weight: 700; }
   h3 span, .sub .r { font-size: 13px; font-weight: 400; color: var(--muted); white-space: nowrap; }
   .row p { font-size: 15px; }
@@ -89,9 +93,9 @@
   .acts button:active { transform: scale(0.97); }
   #copy { min-width: 3.5em; text-align: start; } /* "הועתק" is narrower than "העתקה"; keep the next button in place */
 
-  /* pressing one of the three: the old list drops out, then the new one is laid down line by line, so it is plain
-     that the dates were worked out again. Counting forward the lines come down from above, top first; counting
-     backward they come up from below, bottom first. A switch by keyboard is instant. */
+  /* pressing forward or backward: the old list drops out, then the new one is laid down line by line, so it is plain
+     that the dates were worked out. Counting forward the lines come down from above, top first; counting
+     backward they come up from below, bottom first. A press by keyboard is instant. */
   #result.out { opacity: 0; transition: opacity 110ms var(--ease-out); }
   #result.swap :is(.hd, .row, .bar) { transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out);
     transition-delay: calc(var(--i) * 30ms); }
@@ -101,12 +105,11 @@
   }
 
   @media (hover: hover) and (pointer: fine) {
-    fieldset:enabled .seg label:hover span { background: var(--rule); }
-    fieldset:enabled .seg input:checked + span { background: var(--ink); }
-    .datebox:hover { background: rgb(18 18 18 / 0.05); }
+    .datebox:hover, #kind:enabled:hover, #n:hover { background-color: rgb(18 18 18 / 0.05); }
+    .go:enabled:hover { background: #33332F; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .seg label:active span, .acts button:active, #cal:active { transform: none; }
+    .go:active, .acts button:active, #cal:active { transform: none; }
     #result.out, #result.swap :is(.hd, .row, .bar) { transition: none; }
   }
   .error { margin-top: 32px; padding-top: 12px; border-top: 3px solid var(--ink); font-weight: 700; }
@@ -114,11 +117,10 @@
   @media (max-width: 640px) {
     main { padding: 20px 16px 40px; }
     h1 { font-size: 56px; }
-    .ask > .field { width: 100%; }
-    .seg { height: auto; min-height: 44px; } /* on a very narrow screen a label runs to three lines */
-    .seg span { padding: 6px 4px; font-size: 14px; white-space: normal; text-align: center; line-height: 1.15; }
+    .ask { gap: 12px; }
+    .field { grid-column: 1 / -1; }
     .row { grid-template-columns: 100px 1fr; column-gap: 12px; }
-    .sub { grid-template-columns: 80px 1fr; column-gap: 12px; }
+    .sub { grid-template-columns: 104px 1fr; column-gap: 12px; } /* room for "יום ד׳ · 7 יום לפני" on one line */
     .bar { flex-direction: column; gap: 12px; }
   }
   @media print { .ask, .acts { display: none; } body { background: #fff; } }
@@ -128,7 +130,7 @@
 <main>
   <h1>ELLEBOT</h1>
 
-  <form class="ask" onsubmit="return false">
+  <form class="ask" id="ask" onsubmit="return false">
     <div class="field">
       <label class="lab" for="date">תאריך</label>
       <div class="datebox">
@@ -137,10 +139,13 @@
         <input type="date" id="pick" tabindex="-1" aria-hidden="true" min="2021-01-01">
       </div>
     </div>
-    <fieldset id="kind" disabled>
-      <legend class="lab">מה התאריך</legend>
-      <div class="seg" id="anchors"></div>
-    </fieldset>
+    <div class="field">
+      <label class="lab" for="kind">מה התאריך</label>
+      <select id="kind" disabled></select>
+    </div>
+    <input type="text" id="n" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="מספר ימים" aria-label="מספר ימים" hidden>
+    <button type="button" class="go" value="fwd" disabled>קדימה</button>
+    <button type="button" class="go" value="back" disabled>אחורה</button>
   </form>
 
   <div id="result" aria-live="polite"></div>
@@ -152,9 +157,10 @@
 <script>
   const WEEKDAYS = ["יום א׳", "יום ב׳", "יום ג׳", "יום ד׳", "יום ה׳", "יום ו׳", "שבת"];
   // The sections shown for each kind of date, and their headings.
-  const SECTIONS = { claim: ["claim", "last"], last: ["last"], pretrial: ["pretrial"] };
-  const HEADINGS = { claim: ["כתבי טענות", "מהמצאת כתב התביעה"], last: ["קדימה", "מכתב הטענות האחרון"],
-    pretrial: ["אחורה", "מקדם המשפט הראשון"] };
+  const SECTIONS = { claim: ["claim", "last"], defense: ["defense", "last"], last: ["last"], pretrial: ["pretrial"] };
+  const HEADINGS = { claim: ["כתבי טענות", "מהמצאת כתב התביעה"], defense: ["כתבי טענות", "מהמצאת כתב ההגנה"],
+    last: ["קדימה", "מכתב הטענות האחרון"], pretrial: ["אחורה", "מקדם המשפט הראשון"] };
+  const DIRECTION = { fwd: "קדימה", back: "אחורה" };
   const anchorIds = new Set(ANCHORS.map((a) => a.id));
   const el = (id) => document.getElementById(id);
   const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -164,30 +170,49 @@
     return d.getUTCDate() + "." + (d.getUTCMonth() + 1) + "." + d.getUTCFullYear();
   }
   const dayName = (o) => WEEKDAYS[Moadim.weekday(o)];
-  const days = (r) => `${Math.abs(r.days)} יום`;
+  const days = (r) => `${Math.abs(r.days)} יום${r.days < 0 ? " לפני" : ""}`;
 
-  let start = null;  // the date in the field; null until it is a real date
-  let anchor = null; // which of the three kinds of date was pressed; none until one is
-  let shown = null; // what is on the page now: { label, start, rows }
-  el("anchors").innerHTML = ANCHORS.map((a) =>
-    `<label><input type="radio" name="anchor" value="${a.id}"><span>${a.label}</span></label>`).join("");
-  let byPointer = false;
-  el("anchors").addEventListener("pointerdown", () => { byPointer = true; });
-  let pending = 0; // timer between the old list dropping out and the new one coming in
-  el("anchors").addEventListener("change", (e) => {
-    anchor = e.target.value;
+  let start = null; // the date in the field; null until it is a real date
+  let shown = null; // what is on the page now, for copying and the CSV file: { header (not for a free count), start, entries }
+  let pending = 0;  // timer between the old list dropping out and the new one coming in
+  const kind = el("kind"); // its value: one of the kinds of date, or "free" for a free number of days
+  kind.innerHTML = `<option value="" selected disabled hidden>בחירה</option>`
+    + ANCHORS.map((a) => `<option value="${a.id}">${a.label}</option>`).join("")
+    + `<option value="free">מספר ימים חופשי</option>`;
+  const buttons = [...document.querySelectorAll(".go")];
+  // a kind of date is counted in the direction its rows in the table go; a free number of days, either way
+  const goes = (dir) => kind.value === "free" ? Number(el("n").value) > 0
+    : RULES.some((r) => r.from === kind.value && (dir === "back") === (r.days < 0));
+
+  // any change above the buttons clears the list; it comes back when forward or backward is pressed
+  function reset() {
+    clearTimeout(pending);
+    el("result").classList.remove("out");
+    el("result").innerHTML = "";
+    shown = null;
+    kind.disabled = start === null;
+    el("n").hidden = kind.value !== "free";
+    el("ask").classList.toggle("free", kind.value === "free");
+    for (const b of buttons) b.disabled = start === null || !goes(b.value);
+  }
+  kind.addEventListener("change", () => { reset(); if (kind.value === "free") el("n").focus(); });
+  el("n").addEventListener("input", () => { el("n").value = el("n").value.replace(/\D/g, ""); reset(); });
+  for (const b of buttons) b.addEventListener("click", (e) => {
     const result = el("result");
-    const animate = byPointer;
-    byPointer = false;
+    const animate = e.detail > 0; // a press by keyboard has no click count
     clearTimeout(pending);
     result.classList.toggle("swap", animate);
     if (animate && result.firstElementChild) {
       result.classList.add("out");
-      pending = setTimeout(() => { result.classList.remove("out"); render(); }, 110);
+      pending = setTimeout(() => { result.classList.remove("out"); render(b.value); }, 110);
     } else {
       result.classList.remove("out");
-      render();
+      render(b.value);
     }
+  });
+  // Enter in a field presses the button that can be pressed (forward, when both can)
+  el("ask").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && e.target.matches("#date, #n")) buttons.find((b) => !b.disabled)?.click();
   });
   // dd.mm.yyyy, also with / or - between the parts, or eight digits in a row; null if it is not a real date
   function parseDate(text) {
@@ -200,16 +225,10 @@
   }
   const padded = (o) => Moadim.toIso(o).split("-").reverse().join(".");
 
-  // a new date clears the list; it comes back when one of the three is pressed again
   function setDate(o) {
     if (o === start) return;
-    clearTimeout(pending);
-    el("result").classList.remove("out");
     start = o;
-    el("kind").disabled = start === null;
-    for (const radio of document.querySelectorAll("[name=anchor]")) radio.checked = false;
-    anchor = null;
-    el("result").innerHTML = "";
+    reset();
   }
   el("date").addEventListener("input", () => setDate(parseDate(el("date").value)));
   el("date").addEventListener("blur", () => { if (start !== null) el("date").value = padded(start); });
@@ -225,14 +244,13 @@
   });
   el("result").addEventListener("click", (e) => {
     if (e.target.id === "copy") {
-      const text = [`מועדים לפי ${shown.label}, ${dmy(shown.start)}:`]
-        .concat(shown.rows.map((r) => `${dmy(r.date)} (${dayName(r.date)}) – ${r.action} (תקנה ${r.reg})`)).join("\n");
+      const text = (shown.header ? [shown.header] : []).concat(shown.entries.map((x) => `${dmy(x.date)} (${dayName(x.date)}) – ${x.text}`)).join("\n");
       navigator.clipboard.writeText(text).then(() => {
         e.target.textContent = "הועתק";
         setTimeout(() => { e.target.textContent = "העתקה"; }, 1400);
       });
     } else if (e.target.id === "csv") {
-      download(`מועדים ${dmy(shown.start)}.csv`, csv(shown));
+      download(`מועדים ${dmy(shown.start)}.csv`, csv(shown.entries));
     }
   });
 
@@ -244,17 +262,10 @@
   }
   const note = (r) => (noteText(r) ? `<p class="note">${noteText(r)}</p>` : "");
 
-  // The rows as a CSV file that Excel opens in Hebrew (UTF-8 with a byte order mark).
-  function csv({ label, start, rows }) {
-    const nameOf = (id) => (ANCHORS.find((a) => a.id === id) || RULES.find((r) => r.id === id));
+  // The diary entries as a CSV file that Excel opens in Hebrew (UTF-8 with a byte order mark).
+  function csv(entries) {
     const date = (o) => Moadim.toIso(o).split("-").reverse().join("/");
-    const lines = [["תאריך אחרון", "יום", "פעולה", "תקנה", "ימים", "נספר", "הערה"],
-      [date(start), dayName(start), label, "", "", "", ""]];
-    for (const r of rows) {
-      const from = nameOf(r.from);
-      lines.push([date(r.date), dayName(r.date), r.action, r.reg, Math.abs(r.days),
-        `${r.days < 0 ? "לפני" : "אחרי"} ${from.label || from.action}`, noteText(r)]);
-    }
+    const lines = [["תאריך", "יום", "רישום"]].concat(entries.map((x) => [date(x.date), dayName(x.date), x.text]));
     return "\uFEFF" + lines.map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n") + "\r\n";
   }
   function download(name, text) {
@@ -265,14 +276,39 @@
     URL.revokeObjectURL(a.href);
   }
 
-  function render() {
-    let rows;
+  function render(dir) {
     try {
-      rows = schedule(anchor, start);
+      const html = kind.value === "free" ? free(dir) : chain();
+      finish(html, dir === "back");
     } catch (err) {
       el("result").innerHTML = `<p class="error">${esc(err.message)}</p>`;
-      return;
+      shown = null;
     }
+  }
+  const early = (o) => { if (o < Moadim.MIN) throw new Error("המחשבון תומך בתאריכים מ-1.1.2021 ואילך."); };
+
+  // A free count: the last day, so many days forward or backward from the date.
+  function free(dir) {
+    const n = Number(el("n").value);
+    const r = Moadim.count(start, dir === "back" ? -n : n);
+    early(r.date);
+    r.days = dir === "back" ? -n : n;
+    shown = { start, entries: [{ date: r.date, text: `היום האחרון, ${n} יום ${DIRECTION[dir]} מ-${dmy(start)}` }] };
+    return `
+      <section>
+        <div class="hd"><h2>${DIRECTION[dir]}</h2><p>${n} יום מ${dayName(start)} <span class="n">${dmy(start)}</span></p></div>
+        <div class="row">
+          <div><div class="d">${dmy(r.date)}</div><div class="w">${dayName(r.date)}</div></div>
+          <div><h3>היום האחרון</h3>${note(r)}</div>
+        </div>
+      </section>`;
+  }
+
+  // The deadlines that follow from the date, by the table.
+  function chain() {
+    const anchor = kind.value;
+    const rows = schedule(anchor, start);
+    rows.forEach((r) => early(r.date));
     const dateOf = { [anchor]: start };
     for (const r of rows) dateOf[r.id] = r.date;
     // the steps counted from a row, and from those steps, in order
@@ -300,13 +336,16 @@
       </section>`;
     }).join("");
 
-    shown = { label: ANCHORS.find((a) => a.id === anchor).label, start, rows };
+    shown = { header: `מועדים לפי ${ANCHORS.find((a) => a.id === anchor).label}, ${dmy(start)}:`, start, entries: diary(rows) };
+    return html;
+  }
+
+  // the list, the footer under it, and the order its lines come in: the heading first, then the rows
+  // (from the bottom up when counting backward), the footer last
+  function finish(html, back) {
     el("result").innerHTML = html + `
       <div class="bar"><p>קודם כל, תרגעי. הפגרה אינה נספרת (179(ב)). מועד שקבע בית המשפט גובר. לא מומלץ להשתמש. לא מומלץ להסתמך. עדיף לשאול את פאר.</p>
       <span class="acts"><button type="button" id="copy">העתקה</button><button type="button" id="csv">הורדת CSV</button></span></div>`;
-
-    // the order the lines come in: the heading first, then the rows (from the bottom up when counting backward), the footer last
-    const back = anchor === "pretrial";
     const lines = [...el("result").querySelectorAll(".hd, .row, .bar")];
     lines.forEach((line, i) => {
       const isRow = line.classList.contains("row");
