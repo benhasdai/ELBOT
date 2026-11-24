@@ -115,7 +115,8 @@
     main { padding: 20px 16px 40px; }
     h1 { font-size: 56px; }
     .ask > .field { width: 100%; }
-    .seg span { padding: 0 4px; font-size: 14px; white-space: normal; text-align: center; line-height: 1.15; }
+    .seg { height: auto; min-height: 44px; } /* on a very narrow screen a label runs to three lines */
+    .seg span { padding: 6px 4px; font-size: 14px; white-space: normal; text-align: center; line-height: 1.15; }
     .row { grid-template-columns: 100px 1fr; column-gap: 12px; }
     .sub { grid-template-columns: 80px 1fr; column-gap: 12px; }
     .bar { flex-direction: column; gap: 12px; }
