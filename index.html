@@ -46,6 +46,8 @@
     transition: transform 120ms var(--ease-out); }
   .datebox button:active { transform: scale(0.94); }
   .datebox svg { width: 18px; height: 18px; }
+  .datebox.bad { border-style: dashed; } /* left with text that is not a date */
+  .datebox.bad [type=text] { color: var(--muted); }
   .datebox [type=date] { position: absolute; inset-inline-end: 0; bottom: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
   /* what the date is: the browser's own list, with our frame and arrow */
   #kind { display: block; width: 100%; height: 44px; padding: 0 10px; padding-inline-end: 36px; border: 1px solid var(--ink); border-radius: 0;
@@ -210,7 +212,8 @@
     el("n").hidden = kind.value !== "free";
     el("ask").classList.toggle("free", kind.value === "free");
     for (const b of buttons) b.disabled = start === null || !goes(b.value);
-    el("all").disabled = !Object.keys(given).length;
+    // a field with text that is not a date holds the button back: its date must not drop out of the diary unnoticed
+    el("all").disabled = !Object.keys(given).length || !!document.querySelector("#many .open");
     // the last pleading is the reply or the last day for it: once it follows from the dates typed in,
     // its field shows that day, until a date is typed over it
     let last;
@@ -262,11 +265,12 @@
   document.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && e.target.matches(".ask input[type=text]")) e.target.form.querySelector(".go:enabled")?.click();
   });
-  // dd.mm.yyyy, also with / or - between the parts, or eight digits in a row; null if it is not a real date
+  // dd.mm.yyyy, also with / or - between the parts, or the digits in a row; a year of two digits is 20yy.
+  // null if it is not a real date
   function parseDate(text) {
-    const m = text.trim().match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/) || text.trim().match(/^(\d{2})(\d{2})(\d{4})$/);
+    const m = text.trim().match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4}|\d{2})$/) || text.trim().match(/^(\d{2})(\d{2})(\d{4}|\d{2})$/);
     if (!m) return null;
-    const [d, mo, y] = [Number(m[1]), Number(m[2]), Number(m[3])];
+    const [d, mo, y] = [Number(m[1]), Number(m[2]), Number(m[3]) + (m[3].length === 2 ? 2000 : 0)];
     const date = Moadim.toDate(Moadim.toOrdinal(y, mo, d));
     const real = date.getUTCDate() === d && date.getUTCMonth() + 1 === mo && date.getUTCFullYear() === y; // 31.02 is not
     return real ? Moadim.toOrdinal(y, mo, d) : null;
@@ -280,9 +284,17 @@
       <input type="date" tabindex="-1" aria-hidden="true" min="2021-01-01">`;
     const [text, cal, pick] = box.children;
     let value = null;
-    const set = (o) => { if (o !== value) change(value = o); };
+    // "open": the field holds text that is not a date (yet); left that way, it is marked "bad"
+    const set = (o) => {
+      box.classList.toggle("open", o === null && text.value.trim() !== "");
+      box.classList.remove("bad");
+      change(value = o);
+    };
     text.addEventListener("input", () => set(parseDate(text.value)));
-    text.addEventListener("blur", () => { if (value !== null) text.value = padded(value); });
+    text.addEventListener("blur", () => {
+      if (value !== null) text.value = padded(value);
+      box.classList.toggle("bad", box.classList.contains("open"));
+    });
     cal.addEventListener("click", () => {
       pick.value = value === null ? "" : Moadim.toIso(value);
       pick.showPicker();
