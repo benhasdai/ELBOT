@@ -29,10 +29,19 @@
 
   /* first the date, then what it is; the list appears only after one of the three is pressed */
   .ask { display: grid; gap: 16px; margin-top: 24px; }
-  .ask > label { width: calc((100% + 2px) / 3); } /* as wide as the first of the three cells below */
+  .ask > .field { width: calc((100% + 2px) / 3); } /* as wide as the first of the three cells below */
   .lab { display: block; margin-bottom: 8px; font-size: 13px; color: var(--muted); }
-  #date { width: 100%; height: 44px; padding: 0 10px; background: transparent; border: 1px solid var(--ink); border-radius: 0;
-    font: 600 18px/1 var(--nums); font-variant-numeric: tabular-nums; transition: background-color 150ms var(--ease-out); }
+  /* the date is typed as dd.mm.yyyy; the button opens the browser's calendar, whose own field stays out of sight */
+  .datebox { position: relative; display: flex; height: 44px; border: 1px solid var(--ink); transition: background-color 150ms var(--ease-out); }
+  .datebox:has(#date:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
+  #date { flex: 1; min-width: 0; padding: 0 10px; background: transparent; border: 0; border-radius: 0; outline: none;
+    font: 600 18px/1 var(--nums); font-variant-numeric: tabular-nums; direction: ltr; text-align: right; }
+  #date::placeholder { color: var(--muted); opacity: 1; }
+  #cal { display: grid; place-items: center; width: 42px; padding: 0; background: none; border: 0; cursor: pointer;
+    transition: transform 120ms var(--ease-out); }
+  #cal:active { transform: scale(0.94); }
+  #cal svg { width: 18px; height: 18px; }
+  #pick { position: absolute; inset-inline-end: 0; bottom: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
   .seg { display: flex; height: 44px; border: 1px solid var(--ink); }
   .seg label { position: relative; display: flex; flex: 1; cursor: pointer; }
   .seg label + label { border-inline-start: 1px solid var(--ink); }
@@ -88,10 +97,10 @@
   @media (hover: hover) and (pointer: fine) {
     fieldset:enabled .seg label:hover span { background: var(--rule); }
     fieldset:enabled .seg input:checked + span { background: var(--ink); }
-    #date:hover { background: rgb(18 18 18 / 0.05); }
+    .datebox:hover { background: rgb(18 18 18 / 0.05); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .seg label:active span, .acts button:active { transform: none; }
+    .seg label:active span, .acts button:active, #cal:active { transform: none; }
     #result.swap section, #result.swap .bar { transition: none; }
   }
   .error { margin-top: 32px; padding-top: 12px; border-top: 3px solid var(--ink); font-weight: 700; }
@@ -99,7 +108,7 @@
   @media (max-width: 640px) {
     main { padding: 20px 16px 40px; }
     h1 { font-size: 56px; }
-    .ask > label, #date { width: 100%; }
+    .ask > .field { width: 100%; }
     .seg span { padding: 0 4px; font-size: 14px; white-space: normal; text-align: center; line-height: 1.15; }
     .row { grid-template-columns: 100px 1fr; column-gap: 12px; }
     .sub { grid-template-columns: 80px 1fr; column-gap: 12px; }
@@ -113,7 +122,14 @@
   <h1>ELBOT</h1>
 
   <form class="ask" onsubmit="return false">
-    <label><span class="lab">תאריך</span><input type="date" id="date" min="2021-01-01"></label>
+    <div class="field">
+      <label class="lab" for="date">תאריך</label>
+      <div class="datebox">
+        <input type="text" id="date" inputmode="numeric" autocomplete="off" placeholder="dd.mm.yyyy" maxlength="10">
+        <button type="button" id="cal" aria-label="בחירת תאריך מלוח שנה"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.25" y="3.75" width="13.5" height="12" rx="1"/><path d="M2.25 7.5h13.5M5.75 2v3.5M12.25 2v3.5"/></svg></button>
+        <input type="date" id="pick" tabindex="-1" aria-hidden="true" min="2021-01-01">
+      </div>
+    </div>
     <fieldset id="kind" disabled>
       <legend class="lab">מה התאריך</legend>
       <div class="seg" id="anchors"></div>
@@ -143,6 +159,7 @@
   const dayName = (o) => WEEKDAYS[Moadim.weekday(o)];
   const days = (r) => `${Math.abs(r.days)} יום`;
 
+  let start = null;  // the date in the field; null until it is a real date
   let anchor = null; // which of the three kinds of date was pressed; none until one is
   let shown = null; // what is on the page now: { label, start, rows }
   el("anchors").innerHTML = ANCHORS.map((a) =>
@@ -155,12 +172,37 @@
     byPointer = false;
     render();
   });
+  // dd.mm.yyyy, also with / or - between the parts, or eight digits in a row; null if it is not a real date
+  function parseDate(text) {
+    const m = text.trim().match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/) || text.trim().match(/^(\d{2})(\d{2})(\d{4})$/);
+    if (!m) return null;
+    const [d, mo, y] = [Number(m[1]), Number(m[2]), Number(m[3])];
+    const date = Moadim.toDate(Moadim.toOrdinal(y, mo, d));
+    const real = date.getUTCDate() === d && date.getUTCMonth() + 1 === mo && date.getUTCFullYear() === y; // 31.02 is not
+    return real ? Moadim.toOrdinal(y, mo, d) : null;
+  }
+  const padded = (o) => Moadim.toIso(o).split("-").reverse().join(".");
+
   // a new date clears the list; it comes back when one of the three is pressed again
-  el("date").addEventListener("change", () => {
-    el("kind").disabled = !el("date").value;
+  function setDate(o) {
+    if (o === start) return;
+    start = o;
+    el("kind").disabled = start === null;
     for (const radio of document.querySelectorAll("[name=anchor]")) radio.checked = false;
     anchor = null;
     el("result").innerHTML = "";
+  }
+  el("date").addEventListener("input", () => setDate(parseDate(el("date").value)));
+  el("date").addEventListener("blur", () => { if (start !== null) el("date").value = padded(start); });
+  el("cal").addEventListener("click", () => {
+    el("pick").value = start === null ? "" : Moadim.toIso(start);
+    el("pick").showPicker();
+  });
+  el("pick").addEventListener("change", () => {
+    if (!el("pick").value) return;
+    const o = Moadim.fromIso(el("pick").value);
+    el("date").value = padded(o);
+    setDate(o);
   });
   el("result").addEventListener("click", (e) => {
     if (e.target.id === "copy") {
@@ -205,7 +247,6 @@
   }
 
   function render() {
-    const start = Moadim.fromIso(el("date").value);
     let rows;
     try {
       rows = schedule(anchor, start);
