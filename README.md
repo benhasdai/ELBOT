@@ -1,4 +1,4 @@
-# ELBOT
+# ELLEBOT
 
 Deadline calculator for Israeli civil procedure (תקנות סדר הדין האזרחי, התשע"ט-2018).
 Enter one date, say what it is (service of the claim, the last pleading, or the first pretrial
