@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ELBOT</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karantina:wght@400;700&family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans+Hebrew:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karantina:wght@700&family=Barlow+Condensed:wght@600&family=IBM+Plex+Sans+Hebrew:wght@400;700&display=swap">
 <style>
   /* Ink rules, a condensed display title, condensed numerals, one accent colour for the dates. */
   :root {
@@ -29,10 +29,10 @@
 
   /* first the date, then what it is; the list appears only after one of the three is pressed */
   .ask { display: grid; gap: 16px; margin-top: 24px; }
-  .ask > label { justify-self: start; }
-  .lab { display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted); }
-  #date { height: 44px; padding: 0 10px; background: transparent; border: 1px solid var(--ink); border-radius: 0;
-    font: 600 20px/1 var(--nums); font-variant-numeric: tabular-nums; transition: background-color 150ms var(--ease-out); }
+  .ask > label { width: calc((100% + 2px) / 3); } /* as wide as the first of the three cells below */
+  .lab { display: block; margin-bottom: 8px; font-size: 13px; color: var(--muted); }
+  #date { width: 100%; height: 44px; padding: 0 10px; background: transparent; border: 1px solid var(--ink); border-radius: 0;
+    font: 600 18px/1 var(--nums); font-variant-numeric: tabular-nums; transition: background-color 150ms var(--ease-out); }
   .seg { display: flex; height: 44px; border: 1px solid var(--ink); }
   .seg label { position: relative; display: flex; flex: 1; cursor: pointer; }
   .seg label + label { border-inline-start: 1px solid var(--ink); }
@@ -40,7 +40,7 @@
   .seg span { display: flex; flex: 1; align-items: center; justify-content: center; padding: 0 10px; font-size: 15px; white-space: nowrap; user-select: none;
     transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out), transform 120ms var(--ease-out); }
   .seg label:active span { transform: scale(0.97); }
-  .seg input:checked + span { background: var(--ink); color: var(--paper); font-weight: 500; }
+  .seg input:checked + span { background: var(--ink); color: var(--paper); }
   .seg input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
   /* until there is a date */
   fieldset:disabled .seg, fieldset:disabled .seg label { border-color: var(--rule); cursor: default; }
@@ -48,30 +48,32 @@
   fieldset:disabled .seg span { color: var(--muted); transform: none; }
 
   section { margin-top: 32px; }
-  .hd { display: flex; align-items: baseline; gap: 14px; }
+  .hd { display: flex; align-items: baseline; gap: 12px; }
   h2 { font: 700 28px/.9 var(--display); }
-  .hd p { color: var(--muted); font-size: 14px; }
+  .hd p { color: var(--muted); font-size: 13px; }
+  .hd .n { font: 600 15px/1 var(--nums); font-variant-numeric: tabular-nums; }
   h2, .d { color: var(--accent); }
 
-  .row { display: grid; grid-template-columns: 120px 1fr; column-gap: 20px; padding: 14px 0; border-top: 1px solid var(--rule); }
+  .row { display: grid; grid-template-columns: 120px 1fr; column-gap: 20px; align-items: baseline; padding: 12px 0;
+    border-top: 1px solid var(--rule); }
   .hd + .row { border-top: 1px solid var(--ink); margin-top: 6px; }
   .d { font: 600 24px/1 var(--nums); font-variant-numeric: tabular-nums; direction: ltr; text-align: right; }
-  .w { margin-top: 3px; font-size: 13px; color: var(--muted); }
-  h3 { display: flex; justify-content: space-between; gap: 10px; font-size: 16px; font-weight: 700; }
-  h3 span, .sub .r { font-size: 14px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+  .w { margin-top: 4px; font-size: 13px; color: var(--muted); }
+  h3 { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 15px; font-weight: 700; }
+  h3 span, .sub .r { font-size: 13px; font-weight: 400; color: var(--muted); white-space: nowrap; }
   .row p { font-size: 15px; }
   .note { color: var(--muted); font-size: 13px; }
   /* a step counted from the row above it */
   /* steps counted from the row above them: set in from the edge on a hairline, smaller, lighter, in ink */
-  .subs { grid-column: 1 / -1; display: grid; row-gap: 10px; margin-top: 12px; margin-inline-start: 5px; padding-inline-start: 14px;
-    border-inline-start: 1px solid var(--muted); }
-  .sub { display: grid; grid-template-columns: 100px 1fr; column-gap: 20px; }
+  .subs { grid-column: 1 / -1; display: grid; row-gap: 8px; margin-top: 12px; padding-inline-start: 19px;
+    border-inline-start: 1px solid var(--rule); }
+  .sub { display: grid; grid-template-columns: 100px 1fr; column-gap: 20px; align-items: baseline; }
   .sub .d { font-size: 18px; color: var(--ink); }
-  .sub .t { display: flex; justify-content: space-between; gap: 10px; font-size: 15px; }
+  .sub .t { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 15px; }
 
-  .bar { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 32px; padding-top: 10px;
+  .bar { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 32px; padding-top: 12px;
     border-top: 3px solid var(--ink); font-size: 13px; color: var(--muted); }
-  .acts { display: flex; gap: 18px; white-space: nowrap; }
+  .acts { display: flex; gap: 16px; white-space: nowrap; }
   /* the padding and negative margin enlarge the tap area without moving the text */
   .acts button { background: none; border: 0; padding: 10px 0; margin: -10px 0; font-weight: 700; color: var(--ink); cursor: pointer;
     text-decoration: underline; text-underline-offset: 3px; transition: transform 120ms var(--ease-out); }
@@ -92,7 +94,7 @@
     .seg label:active span, .acts button:active { transform: none; }
     #result.swap section, #result.swap .bar { transition: none; }
   }
-  .error { margin-top: 28px; padding-top: 10px; border-top: 3px solid var(--ink); font-weight: 700; }
+  .error { margin-top: 32px; padding-top: 12px; border-top: 3px solid var(--ink); font-weight: 700; }
 
   @media (max-width: 640px) {
     main { padding: 20px 16px 40px; }
@@ -101,7 +103,7 @@
     .seg span { padding: 0 4px; font-size: 14px; white-space: normal; text-align: center; line-height: 1.15; }
     .row { grid-template-columns: 100px 1fr; column-gap: 12px; }
     .sub { grid-template-columns: 80px 1fr; column-gap: 12px; }
-    .bar { flex-direction: column; gap: 14px; }
+    .bar { flex-direction: column; gap: 12px; }
   }
   @media print { .ask, .acts { display: none; } body { background: #fff; } }
 </style>
@@ -228,7 +230,7 @@
       const [title, from] = HEADINGS[id];
       return `
       <section>
-        <div class="hd"><h2>${title}</h2><p>${from}, ${dayName(dateOf[id])} ${dmy(dateOf[id])}</p></div>
+        <div class="hd"><h2>${title}</h2><p>${from}, ${dayName(dateOf[id])} <span class="n">${dmy(dateOf[id])}</span></p></div>
         ${tops(id).map((r) => `
         <div class="row">
           <div><div class="d">${dmy(r.date)}</div><div class="w">${dayName(r.date)} · ${days(r)}</div></div>
@@ -240,8 +242,7 @@
 
     shown = { label: ANCHORS.find((a) => a.id === anchor).label, start, rows };
     el("result").innerHTML = html + `
-      <div class="bar"><div><p>קודם כל, תרגעי. הפגרה אינה נספרת (179(ב)). מועד שקבע בית המשפט גובר.</p>
-        <p>לא מומלץ להשתמש. לא מומלץ להסתמך. עדיף לשאול את פאר.</p></div>
+      <div class="bar"><p>קודם כל, תרגעי. הפגרה אינה נספרת (179(ב)). מועד שקבע בית המשפט גובר. לא מומלץ להשתמש. לא מומלץ להסתמך. עדיף לשאול את פאר.</p>
       <span class="acts"><button type="button" id="copy">העתקה</button><button type="button" id="csv">הורדת CSV</button></span></div>`;
   }
 </script>
