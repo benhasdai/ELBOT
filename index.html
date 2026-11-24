@@ -44,15 +44,22 @@
   #pick { position: absolute; inset-inline-end: 0; bottom: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
   .seg { display: flex; height: 44px; border: 1px solid var(--ink); }
   .seg label { position: relative; display: flex; flex: 1; cursor: pointer; }
-  .seg label + label { border-inline-start: 1px solid var(--ink); }
-  .seg input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .seg > * + * { border-inline-start: 1px solid var(--ink); }
+  .seg input[type=radio] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
   .seg span { display: flex; flex: 1; align-items: center; justify-content: center; padding: 0 10px; font-size: 15px; white-space: nowrap; user-select: none;
     transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out), transform 120ms var(--ease-out); }
   .seg label:active span { transform: scale(0.97); }
   .seg input:checked + span { background: var(--ink); color: var(--paper); }
   .seg input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+  /* the number of days, in the first cell of the forward/backward row */
+  .num { display: flex; flex: 1; }
+  .num:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
+  #n { flex: 1; width: 100%; min-width: 0; padding: 0 10px; background: transparent; border: 0; border-radius: 0; outline: none;
+    font: 600 18px/1 var(--nums); font-variant-numeric: tabular-nums; text-align: center; }
+  #n::placeholder { font: 400 15px/1 var(--text); color: var(--muted); opacity: 1; }
   /* until there is a date */
-  fieldset:disabled .seg, fieldset:disabled .seg label { border-color: var(--rule); cursor: default; }
+  fieldset:disabled .seg, fieldset:disabled .seg > * { border-color: var(--rule); cursor: default; }
+  fieldset:disabled #n::placeholder { color: var(--rule); }
   fieldset:disabled .seg input { cursor: default; }
   fieldset:disabled .seg span { color: var(--muted); transform: none; }
 
@@ -141,6 +148,14 @@
       <legend class="lab">מה התאריך</legend>
       <div class="seg" id="anchors"></div>
     </fieldset>
+    <fieldset id="free" disabled>
+      <legend class="lab">או מספר ימים</legend>
+      <div class="seg">
+        <div class="num"><input type="text" id="n" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="ימים" aria-label="מספר ימים"></div>
+        <label><input type="radio" name="anchor" value="fwd"><span>קדימה</span></label>
+        <label><input type="radio" name="anchor" value="back"><span>אחורה</span></label>
+      </div>
+    </fieldset>
   </form>
 
   <div id="result" aria-live="polite"></div>
@@ -167,14 +182,17 @@
   const days = (r) => `${Math.abs(r.days)} יום`;
 
   let start = null;  // the date in the field; null until it is a real date
-  let anchor = null; // which of the three kinds of date was pressed; none until one is
+  let anchor = null; // which of the three kinds of date was pressed, or "fwd"/"back" for a free count; none until one is
+  const FREE = { fwd: "קדימה", back: "אחורה" };
   let shown = null; // what is on the page now: { label, start, rows }
   el("anchors").innerHTML = ANCHORS.map((a) =>
     `<label><input type="radio" name="anchor" value="${a.id}"><span>${a.label}</span></label>`).join("");
   let byPointer = false;
-  el("anchors").addEventListener("pointerdown", () => { byPointer = true; });
+  for (const seg of document.querySelectorAll(".seg")) seg.addEventListener("pointerdown", () => { byPointer = true; });
   let pending = 0; // timer between the old list dropping out and the new one coming in
-  el("anchors").addEventListener("change", (e) => {
+  // the three kinds of date and forward/backward are one group of radios: pressing one releases the others
+  document.querySelector(".ask").addEventListener("change", (e) => {
+    if (e.target.name !== "anchor") return;
     anchor = e.target.value;
     const result = el("result");
     const animate = byPointer;
@@ -206,12 +224,20 @@
     clearTimeout(pending);
     el("result").classList.remove("out");
     start = o;
-    el("kind").disabled = start === null;
+    el("kind").disabled = el("free").disabled = start === null;
     for (const radio of document.querySelectorAll("[name=anchor]")) radio.checked = false;
     anchor = null;
     el("result").innerHTML = "";
   }
   el("date").addEventListener("input", () => setDate(parseDate(el("date").value)));
+  // digits only; a new number is counted at once if forward or backward is already pressed
+  el("n").addEventListener("input", () => {
+    el("n").value = el("n").value.replace(/\D/g, "");
+    if (!(anchor in FREE)) return;
+    clearTimeout(pending);
+    el("result").classList.remove("out", "swap");
+    render();
+  });
   el("date").addEventListener("blur", () => { if (start !== null) el("date").value = padded(start); });
   el("cal").addEventListener("click", () => {
     el("pick").value = start === null ? "" : Moadim.toIso(start);
@@ -225,8 +251,8 @@
   });
   el("result").addEventListener("click", (e) => {
     if (e.target.id === "copy") {
-      const text = [`מועדים לפי ${shown.label}, ${dmy(shown.start)}:`]
-        .concat(shown.rows.map((r) => `${dmy(r.date)} (${dayName(r.date)}) – ${r.action} (תקנה ${r.reg})`)).join("\n");
+      const text = [shown.header]
+        .concat(shown.rows.map((r) => `${dmy(r.date)} (${dayName(r.date)}) – ${r.action}${r.reg ? ` (תקנה ${r.reg})` : ""}`)).join("\n");
       navigator.clipboard.writeText(text).then(() => {
         e.target.textContent = "הועתק";
         setTimeout(() => { e.target.textContent = "העתקה"; }, 1400);
@@ -251,9 +277,9 @@
     const lines = [["תאריך אחרון", "יום", "פעולה", "תקנה", "ימים", "נספר", "הערה"],
       [date(start), dayName(start), label, "", "", "", ""]];
     for (const r of rows) {
-      const from = nameOf(r.from);
+      const from = r.fromLabel || nameOf(r.from).label || nameOf(r.from).action;
       lines.push([date(r.date), dayName(r.date), r.action, r.reg, Math.abs(r.days),
-        `${r.days < 0 ? "לפני" : "אחרי"} ${from.label || from.action}`, noteText(r)]);
+        `${r.days < 0 ? "לפני" : "אחרי"} ${from}`, noteText(r)]);
     }
     return "\uFEFF" + lines.map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n") + "\r\n";
   }
@@ -265,7 +291,36 @@
     URL.revokeObjectURL(a.href);
   }
 
+  // A free count: the last day, so many days forward or backward from the date.
+  function renderFree() {
+    const n = Number(el("n").value);
+    if (!n) { el("result").innerHTML = ""; shown = null; return null; }
+    const days = anchor === "back" ? -n : n;
+    const r = { action: "היום האחרון", reg: "", days, fromLabel: "התאריך", ...Moadim.count(start, days) };
+    if (r.date < Moadim.MIN) throw new Error("המחשבון תומך בתאריכים מ-1.1.2021 ואילך.");
+    shown = { header: `${n} יום ${FREE[anchor]} מ-${dmy(start)}:`, label: "התאריך", start, rows: [r] };
+    return `
+      <section>
+        <div class="hd"><h2>${FREE[anchor]}</h2><p>${n} יום מהתאריך, ${dayName(start)} <span class="n">${dmy(start)}</span></p></div>
+        <div class="row">
+          <div><div class="d">${dmy(r.date)}</div><div class="w">${dayName(r.date)} · ${n} יום</div></div>
+          <div><h3>${r.action}</h3>${note(r)}</div>
+        </div>
+      </section>`;
+  }
+
   function render() {
+    if (anchor in FREE) {
+      let html;
+      try {
+        html = renderFree();
+      } catch (err) {
+        el("result").innerHTML = `<p class="error">${esc(err.message)}</p>`;
+        return;
+      }
+      if (html) finish(html);
+      return;
+    }
     let rows;
     try {
       rows = schedule(anchor, start);
@@ -300,13 +355,19 @@
       </section>`;
     }).join("");
 
-    shown = { label: ANCHORS.find((a) => a.id === anchor).label, start, rows };
+    const label = ANCHORS.find((a) => a.id === anchor).label;
+    shown = { header: `מועדים לפי ${label}, ${dmy(start)}:`, label, start, rows };
+    finish(html);
+  }
+
+  // the list, the footer under it, and the order its lines come in
+  function finish(html) {
     el("result").innerHTML = html + `
       <div class="bar"><p>קודם כל, תרגעי. הפגרה אינה נספרת (179(ב)). מועד שקבע בית המשפט גובר. לא מומלץ להשתמש. לא מומלץ להסתמך. עדיף לשאול את פאר.</p>
       <span class="acts"><button type="button" id="copy">העתקה</button><button type="button" id="csv">הורדת CSV</button></span></div>`;
 
     // the order the lines come in: the heading first, then the rows (from the bottom up when counting backward), the footer last
-    const back = anchor === "pretrial";
+    const back = anchor === "pretrial" || anchor === "back";
     const lines = [...el("result").querySelectorAll(".hd, .row, .bar")];
     lines.forEach((line, i) => {
       const isRow = line.classList.contains("row");

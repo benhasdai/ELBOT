@@ -3,6 +3,7 @@
 Deadline calculator for Israeli civil procedure (תקנות סדר הדין האזרחי, התשע"ט-2018).
 Enter one date, say what it is (service of the claim, the last pleading, or the first pretrial
 hearing), and get every deadline that follows from it, each with its regulation number.
+Or enter a number of days and count it forward or backward from the date, under the same rules.
 The results can be copied as text or downloaded as a CSV file.
 
 ## Use
